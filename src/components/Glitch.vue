@@ -66,7 +66,7 @@
                 this.loader.add( 'imgRef', this.imgSrc )
                 this.loader.load( (loader, resources) => {
                     this.imgRef = resources.imgRef
-                    this.glitch()
+                    this.testShader()
                   /*  this.createStage()
                     this.createFilter()
                     this.resizeImages()
@@ -74,122 +74,137 @@
                 })    
             },
 
-            glitch() {
-                function GlitchFilter() {
-                    var vertexShader = null;
-                    var fragmentShader = [
-                        'precision mediump float;',
-                        'uniform sampler2D uSampler;',
-                        'uniform float rand;',
-                        'uniform float val1;',
-                        'uniform float val2;',
-                        'uniform vec4 dimensions;',
-                        'varying vec2 vTextureCoord;',
-                        'void main (void)',
-                        '{',
-                        '   vec2 pos = vTextureCoord * vec2(dimensions);',
-                        '   vec2 posOffset = pos + vec2(floor(sin(pos.y / val1 * rand + rand * rand)) * val2 * rand, 0);',
-                        '   posOffset = posOffset / vec2(dimensions);',
-                        '   vec4 col = texture2D(uSampler, posOffset);',
-                        '   gl_FragColor.rgba = col.rgba;',
-                        '}'
-                    ].join('\n');
+            testShader() {
+                    var app = new PIXI.Application(600, 400, {backgroundColor : 0x1099bb});
+                    document.body.appendChild(app.view);
 
-                    PIXI.Filter.call(
-                        this,
-                        vertexShader,
-                        fragmentShader
-                    );
-                    
-                    this.uniforms.rand = 5
-                    this.uniforms.val1 = 150
-                    this.uniforms.val2 = 20
-                    this.uniforms.dimensions = new Float32Array(2)
-                    this.uniforms.timer = 0
-                }
+                    // create filter
+                    // 
+                    var fragSrcRemoveRed = `
+                        precision mediump float;                        
+                        varying vec2 vTextureCoord;
+                        uniform sampler2D uSampler;
+                        
+                        void main(void)
+                        {
+                            vec4 pixel = texture2D(uSampler, vTextureCoord);
+                            pixel.r = 0.0;
+                            gl_FragColor = pixel;
+                        }
+                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' )
 
-                GlitchFilter.prototype = Object.create(PIXI.Filter.prototype);
-                GlitchFilter.prototype.constructor = GlitchFilter;
+                    const fragmentShaderX = `
+                        precision mediump float;                        
+                        varying vec2 vTextureCoord; 
+                        uniform sampler2D uSampler;                       
+                        uniform vec2 dimensions;
+                        uniform vec4 filterArea;
 
-                // définir le ratio de l'image
-                this.imgRatio = this.imgRef.data.height / this.imgRef.data.width 
-                // définir la largeur du containeur
-                this.appWidth = this.canvasHolder.offsetWidth
-                // définir proportionnellement la hauteur du containeur
-                this.appHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+                        vec2 mapCoord( vec2 coord )
+                        {
+                            coord *= filterArea.xy;
 
-                // Create renderer
-                var renderer = PIXI.autoDetectRenderer(this.appWidth, this.appHeight, /*{transparent: true}*/);
-                renderer.clearBeforeRender = true;
+                            return coord;
+                        }
 
-                //Add the canvas to the HTML document
-                this.canvasHolder.append(renderer.view);
+                        vec2 unmapCoord( vec2 coord )
+                        {
+                            coord /= filterArea.xy;
 
-                // Create a container object called the `stage`
-                var stage = new PIXI.Container();
+                            return coord;
+                        }
 
-                // Create sprite
-                var sprite = new PIXI.Sprite.fromImage(this.imgRef.name);
-                sprite.x = 0;
-                sprite.y = 0;
-                sprite.width = this.appWidth;
-                sprite.height = this.appHeight;
-                stage.addChild(sprite);
+                        vec2 offset(vec2 pos)
+                        {
+                            if (pos.x < 0.0 || pos.y < 0.0 || pos.x > 1.0 || pos.y > 1.0) {
+                                return vec2(0.0);
+                            } else {
+                                return pos;
+                            }
+                        }
+                        
+                        void main(void)
+                        {
+                            vec2 coord = vTextureCoord;
+                            coord = mapCoord(coord ) / dimensions;
+                            coord = offset ( coord );
+                            coord = unmapCoord(coord * dimensions);
+                            gl_FragColor = texture2D( uSampler, coord );
+                        }
+                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' )
 
-                var filter = new GlitchFilter();
-                //stage.filters = [filter];
-                
-                // Render
-                this.then = Date.now();
-                this.glitch = false;
-                this.sprite = sprite;
-                this.filter = filter;
-                this.renderer = renderer;
-                this.stage = stage;
-                this.PixiRender();
+                    var fragSrcY = `
+                        precision mediump float;
+                        varying vec2 vTextureCoord;
+                        uniform sampler2D uSampler;
+                        uniform vec2 dimensions;
+                        uniform vec4 filterArea;
+
+                        vec2 mapCoord( vec2 coord )
+                        {
+                            coord *= filterArea.xy;
+
+                            return coord;
+                        }
+
+                        vec2 unmapCoord( vec2 coord )
+                        {
+                            coord /= filterArea.xy;
+
+                            return coord;
+                        }
+
+                        vec2 warpAmount = vec2( 2.0 / 34.0, 1.0 / 16.0 );
+
+                        vec2 warp(vec2 pos)
+                        {
+                            pos = pos * 2.0 - 1.0;
+                            pos *= vec2(
+                            1.0 + (pos.y * pos.y) * warpAmount.x,
+                            1.0 + (pos.x * pos.x) * warpAmount.y
+                            );
+                            return pos * 0.5 + 0.5;;
+                        }
+                        
+                        void main() {
+                            vec2 coord = vTextureCoord;
+                            coord = mapCoord(coord ) / dimensions;
+                            coord = warp( coord );
+                            #coord = unmapCoord(coord * dimensions);
+                            gl_FragColor = texture2D( uSampler, coord );
+                        }
+                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' );
+
+                    var filter = new PIXI.Filter( null, fragmentShaderX );
+                    filter.apply = function(filterManager, input, output)
+                    {
+                        this.uniforms.dimensions[0] = input.sourceFrame.width
+                        this.uniforms.dimensions[1] = input.sourceFrame.height
+
+                        // draw the filter...
+                        filterManager.applyFilter(this, input, output);
+                    }
+
+                    // load image
+
+                    var texture = PIXI.Texture.from( this.imgSrc );
+                    var sprite = new PIXI.Sprite( texture );
+                    app.stage.addChild( sprite );
+                    sprite.x = 50;
+                    sprite.y = 50;
+                    sprite.scale.x = sprite.scale.y = 0.25
+
+                    // apply filter
+                    sprite.filters = [ filter ];
             },
             
             PixiRender() {
 
-                var glitch = this.glitch;
-                var renderer = this.renderer;
-                var stage = this.stage;
-                var filter = this.filter;
-                var sprite = this.sprite;
-
-                var now = Date.now();
-                var then = this.then;
-                var rate = 50;
-                var delta = now - then;
-
-                if (delta > rate) {
-                    if (Math.random() > 0.9){
-                        glitch = !glitch;
-                    }
-                    then = now - (delta % rate);
-                    this.then = then;
-                    this.glitch = glitch;
-                }
-
-                if (glitch) {
-                    if (Math.random() > 0.5) {
-                        sprite.width = this.appWidth;
-
-                        filter.rand = Math.random()*3;
-                        filter.val1 = Math.random()*200;
-                        filter.val2 = Math.random()*20;
-                    } else {
-                        sprite.width = this.appWidth*(20+Math.random()*20);
-                    }
-                } else {
-                    filter.rand = 0;
-                    sprite.width = this.appWidth;
-                }
-        
-                renderer.render(stage);
+                this.renderer.render(this.container);
 
                 // rAF
-                requestAnimationFrame(() => {
+                requestAnimationFrame((delta) => {
+                    this.filter.uniforms.time += 0.01
                     this.PixiRender()
                 });
             },

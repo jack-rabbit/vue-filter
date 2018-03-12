@@ -11,9 +11,9 @@
                     :distortImg="refDistortImg"
                     v-if="showJello"
                 />
-                <WhiteNoise 
+                <TonalNoise 
                     :bgImg="refBgImg" 
-                    v-if="showWhiteNoise" 
+                    v-if="showTonalNoise" 
                 />
                 <Glitch 
                     :bgImg="refBgImg" 
@@ -28,7 +28,7 @@
 
     import HelloWorld from './components/HelloWorld'
     import Jello from './components/Jello'
-    import WhiteNoise from './components/WhiteNoise'
+    import TonalNoise from './components/TonalNoise'
     import Glitch from './components/Glitch'
 
     export default {
@@ -37,10 +37,10 @@
 
         data () {
 	        return {
-                showWhiteNoise: true,
+                showTonalNoise: true,
                 showJello: false,
-                showGlitch: true,
-                refBgImg: 'bg/image-1.jpg',
+                showGlitch: false,
+                refBgImg: 'bg/reference_test_frag_shader.jpg',
                 refOptions: {
                     transition: 1,
                     speed: 2.5,
@@ -55,7 +55,7 @@
         components: {
             HelloWorld,
             Jello,
-            WhiteNoise,
+            TonalNoise,
             Glitch
         }
     }
