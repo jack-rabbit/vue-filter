@@ -1,32 +1,13 @@
 <template>
     <div id="app">
-        <img src="./assets/logo.png" width="50px">
-        <HelloWorld/>
-        <br><br><br><br>
-        <div class="container__filter">
-            <a href="#">
-                <Jello 
-                    :bgImg="refBgImg" 
-                    :options="refOptions"
-                    :distortImg="refDistortImg"
-                    v-if="showJello"
-                />
-                <TonalNoise 
-                    :bgImg="refBgImg" 
-                    v-if="showTonalNoise" 
-                />
-                <Glitch 
-                    :bgImg="refBgImg" 
-                    v-if="showGlitch" 
-                />
-            </a>
-        </div>
+        <Selecter :vueCourante="vueCourante" />
+        <router-view name="main" :key="$route.fullPath" /> 
     </div>
 </template>
 
 <script>
 
-    import HelloWorld from './components/HelloWorld'
+    import Selecter from './components/Selecter'
     import Jello from './components/Jello'
     import TonalNoise from './components/TonalNoise'
     import Glitch from './components/Glitch'
@@ -37,9 +18,10 @@
 
         data () {
 	        return {
-                showTonalNoise: true,
+                vueCourante: 'accueil',
+                showTonalNoise: false,
                 showJello: false,
-                showGlitch: false,
+                showGlitch: true,
                 refBgImg: 'bg/reference_test_frag_shader.jpg',
                 refOptions: {
                     transition: 1,
@@ -53,7 +35,7 @@
 	        }
 	    },
         components: {
-            HelloWorld,
+            Selecter,
             Jello,
             TonalNoise,
             Glitch
@@ -64,25 +46,15 @@
 
 <style>
 
-    *{
-        box-sizing: border-box;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
-        margin:0;
-    }
-
+    @import './assets/css/bootstrap.css';
+        
     #app {
-        font-family: 'Avenir', Helvetica, Arial, sans-serif;
+        font-family: Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-align: center;
         color: #2c3e50;
-        margin-top: 60px;
+        overflow: hidden;
     }
     
-    .container__filter{
-        width:80%;
-        margin:0 auto;
-    }
 </style>

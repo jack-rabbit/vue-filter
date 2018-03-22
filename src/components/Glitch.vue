@@ -1,27 +1,35 @@
 <template>
-    <div ref="glitch" class="glitch"></div>
+    <div>
+        <div class="blend">
+            <TonalNoise :useIng="true" :bgImg="'bg/pirate.jpg'"/>
+        </div>
+        <div ref="glitch" class="glitch"></div>
+    </div>
 </template>
 
 <script>
 
     import * as PIXI from 'pixi.js'
     import TweenLite from 'gsap'
-    //import {Glitch} from '../filters/filters'
+    import TonalNoise from './TonalNoise'
+    import {Glitch} from '../filters/glitch-filter'
 
     export default {
 
-        name: 'Noise',
-
-        props: {
-            // src de l'image de fond
-            bgImg: String
-        },
+        name: 'Glitch',
 
         data() {
             return { 
+                bgImg: 'bg/pirate.jpg',
                 imgRef: null,
-                resizeTimeout: null
+                resizeTimeout: null,
+                then: Date.now(),
+                cover: true
             }
+        },
+
+        components: {
+            TonalNoise
         },
 
         created() {
@@ -31,6 +39,10 @@
 
         mounted() {
             this.addListeners()
+        },
+
+        beforeDestroy() {
+            this.app.destroy(true)
         },
 
         computed: {
@@ -66,147 +78,11 @@
                 this.loader.add( 'imgRef', this.imgSrc )
                 this.loader.load( (loader, resources) => {
                     this.imgRef = resources.imgRef
-                    this.testShader()
-                  /*  this.createStage()
+                    this.createStage()
                     this.createFilter()
                     this.resizeImages()
-                    this.animateFilters()*/
+                    this.animateFilters()
                 })    
-            },
-
-            testShader() {
-                    var app = new PIXI.Application(600, 400, {backgroundColor : 0x1099bb});
-                    document.body.appendChild(app.view);
-
-                    // create filter
-                    // 
-                    var fragSrcRemoveRed = `
-                        precision mediump float;                        
-                        varying vec2 vTextureCoord;
-                        uniform sampler2D uSampler;
-                        
-                        void main(void)
-                        {
-                            vec4 pixel = texture2D(uSampler, vTextureCoord);
-                            pixel.r = 0.0;
-                            gl_FragColor = pixel;
-                        }
-                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' )
-
-                    const fragmentShaderX = `
-                        precision mediump float;                        
-                        varying vec2 vTextureCoord; 
-                        uniform sampler2D uSampler;                       
-                        uniform vec2 dimensions;
-                        uniform vec4 filterArea;
-
-                        vec2 mapCoord( vec2 coord )
-                        {
-                            coord *= filterArea.xy;
-
-                            return coord;
-                        }
-
-                        vec2 unmapCoord( vec2 coord )
-                        {
-                            coord /= filterArea.xy;
-
-                            return coord;
-                        }
-
-                        vec2 offset(vec2 pos)
-                        {
-                            if (pos.x < 0.0 || pos.y < 0.0 || pos.x > 1.0 || pos.y > 1.0) {
-                                return vec2(0.0);
-                            } else {
-                                return pos;
-                            }
-                        }
-                        
-                        void main(void)
-                        {
-                            vec2 coord = vTextureCoord;
-                            coord = mapCoord(coord ) / dimensions;
-                            coord = offset ( coord );
-                            coord = unmapCoord(coord * dimensions);
-                            gl_FragColor = texture2D( uSampler, coord );
-                        }
-                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' )
-
-                    var fragSrcY = `
-                        precision mediump float;
-                        varying vec2 vTextureCoord;
-                        uniform sampler2D uSampler;
-                        uniform vec2 dimensions;
-                        uniform vec4 filterArea;
-
-                        vec2 mapCoord( vec2 coord )
-                        {
-                            coord *= filterArea.xy;
-
-                            return coord;
-                        }
-
-                        vec2 unmapCoord( vec2 coord )
-                        {
-                            coord /= filterArea.xy;
-
-                            return coord;
-                        }
-
-                        vec2 warpAmount = vec2( 2.0 / 34.0, 1.0 / 16.0 );
-
-                        vec2 warp(vec2 pos)
-                        {
-                            pos = pos * 2.0 - 1.0;
-                            pos *= vec2(
-                            1.0 + (pos.y * pos.y) * warpAmount.x,
-                            1.0 + (pos.x * pos.x) * warpAmount.y
-                            );
-                            return pos * 0.5 + 0.5;;
-                        }
-                        
-                        void main() {
-                            vec2 coord = vTextureCoord;
-                            coord = mapCoord(coord ) / dimensions;
-                            coord = warp( coord );
-                            #coord = unmapCoord(coord * dimensions);
-                            gl_FragColor = texture2D( uSampler, coord );
-                        }
-                    `.split('\n').reduce( (c, a) => c + a.trim() + '\n' );
-
-                    var filter = new PIXI.Filter( null, fragmentShaderX );
-                    filter.apply = function(filterManager, input, output)
-                    {
-                        this.uniforms.dimensions[0] = input.sourceFrame.width
-                        this.uniforms.dimensions[1] = input.sourceFrame.height
-
-                        // draw the filter...
-                        filterManager.applyFilter(this, input, output);
-                    }
-
-                    // load image
-
-                    var texture = PIXI.Texture.from( this.imgSrc );
-                    var sprite = new PIXI.Sprite( texture );
-                    app.stage.addChild( sprite );
-                    sprite.x = 50;
-                    sprite.y = 50;
-                    sprite.scale.x = sprite.scale.y = 0.25
-
-                    // apply filter
-                    sprite.filters = [ filter ];
-            },
-            
-            PixiRender() {
-
-                this.renderer.render(this.container);
-
-                // rAF
-                requestAnimationFrame((delta) => {
-                    this.filter.uniforms.time += 0.01
-                    this.PixiRender()
-                });
             },
 
             createStage() {
@@ -216,7 +92,8 @@
                 // définir la largeur du containeur
                 this.appWidth = this.canvasHolder.offsetWidth
                 // définir proportionnellement la hauteur du containeur
-                this.appHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+                //this.appHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+                this.appHeight = this.canvasHolder.offsetHeight
 
                 // céer l'application PIXI
                 this.app = new PIXI.Application(this.appWidth, this.appHeight, /*{transparent: true}*/)
@@ -227,19 +104,7 @@
 
                 // créer l'image de fond
                 this.imgBg = PIXI.Sprite.fromImage(this.imgRef.name)
-
-                // créer l'interactivité
-                this.imgBg.interactive = true
-
-                // au survol
-                this.imgBg.mouseover = () => {
-                   //this.noiseLevel(0)               
-                }
-
-                // lorsque la souris est en dehors
-                this.imgBg.mouseout = () => {
-                    //this.noiseLevel(1)
-                }
+                this.imgBg.anchor.set(0.5)
 
                 // placer l'image de fond dans l'application
                 this.app.stage.addChild(this.imgBg)
@@ -247,31 +112,97 @@
             },
 
             createFilter() {
-
+                // Creer le containeur du filtre
                 // créer le filter
                 this.glitchFilter = new Glitch()
+                this.glitchFilter.apply = function(filterManager, input, output){
+
+                    
+                    this.uniforms.dimensions[0] = input.sourceFrame.width
+                    this.uniforms.dimensions[1] = input.sourceFrame.height
+
+                    // draw the filter...
+                    filterManager.applyFilter(this, input, output);
+                }
+
                 // appliquer le filter
-                this.app.stage.filters = [this.glitchFilter]
+                this.imgBg.filters = [this.glitchFilter]
             },
 
             resizeImages() {
                 
-                // place les images à 100% du containeur
-                // dans la scene
+                // Place l'image pour 'couvrir'
+                // tout le conteneur
+                if (this.cover){
 
-                // définir le ratio entre l'application et les images à afficher
-                const ratioImgBg = (this.appWidth / this.imgRef.data.width)
-                const newHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+                    const ratioImgBg = (this.imgRef.data.width / this.imgRef.data.height)  
+                    const ratioApp = (this.appWidth / this.appHeight)
 
-                this.imgBg.width = 0
-                this.imgBg.height = 0
-                this.imgBg.width = this.appWidth
-                this.imgBg.height = newHeight
+                    /*
+                    console.log('image')
+                    console.log(this.imgRef.data.width, this.imgRef.data.height)
+                    console.log('ratio image',ratioImgBg)
+
+                    console.log('appli')
+                    console.log(this.appWidth, this.appHeight)
+                    console.log('ratio appli',ratioApp)
+                    */
+
+                    console.log('resize Glitch')
+                    
+                    if( ratioApp >= ratioImgBg ){
+                        this.imgBg.width = this.appWidth
+                        const newRatio = this.appWidth / this.imgRef.data.width
+                        this.imgBg.scale.y = newRatio
+                    }else{
+                        this.imgBg.height = this.appHeight
+                        const newRatio = this.appHeight / this.imgRef.data.height
+                        this.imgBg.scale.x = newRatio     
+                    }
+                    console.log(this.imgBg.width , 'x',this.imgBg.height)   
+                    this.imgBg.x = this.appWidth / 2
+                    this.imgBg.y = this.appHeight / 2
+
+                // SINON
+                // place l'image à 100% de la largeur du conteneur     
+                } else {
+                    
+                    // définir le ratio entre l'application et les images à afficher
+                    const ratioImgBg = (this.appWidth / this.imgRef.data.width)
+                    const newHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+
+                    this.imgBg.x = this.appWidth / 2
+                    this.imgBg.y = newHeight / 2
+
+                    this.imgBg.scale.x = this.imgBg.scale.y = ratioImgBg  
+               }
+ 
             },
 
             animateFilters() {
                 this.app.ticker.add(() => {
-
+                    const now = Date.now()
+                    const rate = 50
+                    const delta = now - this.then
+                    if (delta > rate) {
+                        if (Math.random() > 0.9){
+                            this.glitch = !this.glitch
+                        }
+                        this.then = now - (delta % rate)
+                    }
+                    if (this.glitch) { 
+                        if (Math.random() > 0.5) {
+                            this.resizeImages()
+                            this.glitchFilter.uniforms.rand = Math.random()*30000
+                            this.glitchFilter.uniforms.val1 = Math.random()*2000
+                            this.glitchFilter.uniforms.val2 = Math.random()*200
+                        } else {
+                            this.imgBg.x = this.imgBg.x + ( 20 - Math.random()*40 )
+                        }
+                    } else {
+                        this.glitchFilter.uniforms.rand = 0
+                        this.resizeImages()
+                    }
                 })
             },
 
@@ -279,33 +210,38 @@
 
                 // définir la nouvelle largeur du containeur
                 this.appWidth = this.canvasHolder.offsetWidth
-                const newHeight = Number( this.appWidth * this.imgRatio ).toFixed()
+                this.appHeight = this.canvasHolder.offsetHeight
+                //const newHeight = Number( this.appWidth * this.imgRatio ).toFixed()
 
                 // retailler l'app
-                this.app.renderer.resize(this.appWidth , newHeight)
+                this.app.renderer.resize(this.appWidth , this.appHeight)
 
                 //postionner l'image de fond 
                 this.resizeImages()
-            },
-
-            noiseLevel(amt) {
-                // option transition 0/1
-                TweenLite.to(
-                    this.noiseFilter.uniforms, 1, {
-                        alpha: amt,
-                        ease: Power2.easeInOut
-                    }
-                )
             }
-
         }
     }
 
 </script>
 
 <style scoped>
+    .blend{
+        mix-blend-mode: screen;
+        height: 100vh;
+        width: 100vw;   
+        overflow: hidden;  
+        position: absolute;
+        z-index: 5;
+        opacity: 0.5;
+        filter: grayscale(100%);
+    }
     .glitch{
-        overflow: hidden;
+        height: 100vh;
+        width: 100vw;   
+        overflow: hidden;  
+        position: relative;
+        filter: grayscale(100%);
+        opacity:1;
     }
 
 </style>

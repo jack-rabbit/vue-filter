@@ -13,17 +13,29 @@
 
         props: {
             // src de l'image de fond
-            bgImg: String,
-            // options
-            options: Object,
+            bgImg: {
+                default: 'bg/image-1.jpg',
+                type: String
+            },
             // src de l'images servant à faire la distortion
-            distortImg: String
+            distortImg: {
+                default: 'distortion/dmap-clouds-01.jpg',
+                type: String
+            }
         },
 
         data() {
             return { 
                 imgRef: null,
-                resizeTimeout: null
+                resizeTimeout: null,
+                options: {
+                    transition: 1,
+                    speed: 3,
+                    dispScale: 5,
+                    dispX: true,
+                    dispY: true,
+                    count: 0
+                }
             }
         },
         
@@ -37,6 +49,10 @@
             this.addListeners()
         },
 
+        beforeDestroy() {
+            this.app.destroy(true)
+        },
+        
         computed: {
             canvasHolder() {
                 return this.$refs.jello
@@ -143,6 +159,8 @@
                 this.imgBg.y = newHeight / 2
 
                 this.imgBg.scale.x = this.imgBg.scale.y = ratioImgBg   
+
+                console.log('resize Jello')
             },   
 
             animateFilters() {
@@ -195,6 +213,8 @@
 <style scoped>
     .jello{
         overflow: hidden;
+        margin:20% auto 0;
+        width:50%;
+        margin: 120px auto 0;
     }
-
 </style>
