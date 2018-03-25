@@ -128,7 +128,7 @@
 
                 this.distortFilter = new DistortFilter()
                 this.distortFilter.uniforms.noiseTexture = PIXI.Texture.fromImage(this.distortRef.name)
-                this.distortFilter.uniforms.uNoise = this.distortValue
+                this.distortFilter.uniforms.amplitude = this.distortValue
 
                 this.distortFilter.apply = function(filterManager, input, output, refImg){
 
