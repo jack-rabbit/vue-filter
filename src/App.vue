@@ -6,40 +6,20 @@
 </template>
 
 <script>
-
     import Selecter from './components/Selecter'
-    import Jello from './components/Jello'
-    import TonalNoise from './components/TonalNoise'
-    import Glitch from './components/Glitch'
-
     export default {
 
         name: 'App',
 
         data () {
 	        return {
-                vueCourante: 'accueil',
-                showTonalNoise: false,
-                showJello: false,
-                showGlitch: true,
-                refBgImg: 'bg/reference_test_frag_shader.jpg',
-                refOptions: {
-                    transition: 1,
-                    speed: 2.5,
-                    dispScale: 5,
-                    dispX: true,
-                    dispY: true,
-                    count: 0
-                },
-                refDistortImg: 'distortion/dmap-clouds-01.jpg'
+                vueCourante: 'accueil'
 	        }
-	    },
+        },
+        
         components: {
-            Selecter,
-            Jello,
-            TonalNoise,
-            Glitch
-        }
+			Selecter
+		},
     }
 
 </script>

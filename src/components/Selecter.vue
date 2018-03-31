@@ -26,18 +26,13 @@ export default {
 		vueCourante: String
 	},
 
-	data() {
-		return {
-			msg: 'PIXI component'
-		}
-	},
-
 	mounted() {
 
 		// définir l'option du select
 		// qui sera 'selected'
 		let path = (window.location.pathname).split('/').pop()
 		const options = this.$refs.selecter.options
+
 		Array.from(options).map( (option, index) => {  
 			if (option.value === path ){
 				return this.$refs.selecter.selectedIndex = index
@@ -61,10 +56,6 @@ export default {
 				//this.$router.push({ path: `/filters/${ref}` })
 				this.$router.push({ name: ref, params: { filter: ref }})
 			}
-			
-			// named route
-			//this.$router.push({ name: 'filters', params: { ref }})
-
 		}
 	}
 }
